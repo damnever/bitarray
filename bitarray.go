@@ -1,3 +1,6 @@
+/*
+BitArray for Golang.
+*/
 package bitarray
 
 import (
@@ -64,6 +67,7 @@ func (bits *BitArray) indexOutOfRange(idx int) error {
 }
 
 // Get return the bit by index n.
+// If index out of range [0, BitArray.Len()), return error.
 func (bits *BitArray) Get(n int) (int, error) {
 	if err := bits.indexOutOfRange(n); err != nil {
 		return 0, err
@@ -71,7 +75,8 @@ func (bits *BitArray) Get(n int) (int, error) {
 	return int((bits.bytes[n/8] >> byte(n%8)) & 1), nil
 }
 
-// Put set the nth bit with bit(0/1), and return the old bit in the index n.
+// Put set the nth bit with 0/1, and return the old value of nth bit.
+// If index out of range [0, BitArray.Len()), return error.
 func (bits *BitArray) Put(n int, bit int) (int, error) {
 	if err := bits.indexOutOfRange(n); err != nil {
 		return 0, err
@@ -87,6 +92,8 @@ func (bits *BitArray) Put(n int, bit int) (int, error) {
 	return prev, nil
 }
 
+// Set the value of all bits to 1, which index range between low and high.
+// low must less than high, and low/high cannot out of range [0, BitArray.Len()).
 func (bits *BitArray) Set(low int, high int) error {
 	if low > high {
 		msg := fmt.Sprintf("low %d should less than high %d", low, high)
@@ -113,6 +120,8 @@ func (bits *BitArray) Set(low int, high int) error {
 	return nil
 }
 
+// Clear set the value of all bits to 0, which index range between low and high.
+// low must less than high, and low/high cannot out of range [0, BitArray.Len()).
 func (bits *BitArray) Clear(low int, high int) error {
 	if low > high {
 		msg := fmt.Sprintf("low %d should less than high %d", low, high)
@@ -139,6 +148,8 @@ func (bits *BitArray) Clear(low int, high int) error {
 	return nil
 }
 
+// Not flips the value of all bits, which index range between low and high.
+// low must less than high, and low/high cannot out of range [0, BitArray.Len()).
 func (bits *BitArray) Not(low int, high int) error {
 	if low > high {
 		msg := fmt.Sprintf("low %d should less than high %d", low, high)
@@ -175,6 +186,8 @@ func bytes2word(bs []byte) uint64 {
 	return n
 }
 
+// Eq check whether the BitArray is equal to another BitArray.
+// If length isn't same, return false.
 func (bits *BitArray) Eq(obits *BitArray) bool {
 	if bits.length != obits.length {
 		return false
@@ -190,6 +203,8 @@ func (bits *BitArray) Eq(obits *BitArray) bool {
 	return true
 }
 
+// Leq check whether the BitArray is the subset of the another.
+// If length isn't same, return false.
 func (bits *BitArray) Leq(obits *BitArray) bool {
 	if bits.length != obits.length {
 		return false
@@ -204,6 +219,8 @@ func (bits *BitArray) Leq(obits *BitArray) bool {
 	return true
 }
 
+// Lt check whether the BitArray is the proper subset of the another.
+// If length isn't same, return false.
 func (bits *BitArray) Lt(obits *BitArray) bool {
 	if bits.length != obits.length {
 		return false
@@ -222,4 +239,15 @@ func (bits *BitArray) Lt(obits *BitArray) bool {
 		return false
 	}
 	return true
+}
+
+// Convert the BitArray to a array of integers, and return.
+func (bits *BitArray) ToArray() []int {
+	ints := make([]int, bits.length, bits.length)
+
+	for i := 0; i < bits.length; i++ {
+		ints[i], _ = bits.Get(i)
+	}
+
+	return ints
 }

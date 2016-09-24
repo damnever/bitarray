@@ -182,7 +182,7 @@ func TestEq(t *testing.T) {
 		bits1.Put(i, bit)
 		bits2.Put(i, bit)
 		if !bits1.Eq(bits2) {
-			t.Fatalf("except equal, got %v != %v\n", bits1, bits2)
+			t.Fatalf("except equal, got %v != %v\n", bits1.ToArray(), bits2.ToArray())
 		}
 	}
 }
@@ -203,14 +203,14 @@ func _testLtOrEq(t *testing.T, eq bool) {
 	for _, i := range idxs[:len(idxs)-1] {
 		bits2.Put(i, 1)
 		if !bits2.Leq(bits1) {
-			t.Fatalf("except equal, got %v != %v\n", bits1, bits2)
+			t.Fatalf("except equal, got %v != %v\n", bits1.ToArray(), bits2.ToArray())
 		}
 	}
 
 	if eq {
 		bits2.Put(idxs[len(idxs)-1], 1)
 		if !bits2.Leq(bits1) {
-			t.Fatalf("except equal, got %v != %v\n", bits1, bits2)
+			t.Fatalf("except equal, got %v != %v\n", bits1.ToArray(), bits2.ToArray())
 		}
 	}
 }
