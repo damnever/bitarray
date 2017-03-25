@@ -77,19 +77,19 @@ func TestBasic(t *testing.T) {
 func TestCount(t *testing.T) {
 	fmt.Println("Test: Count")
 
-	bits := New(8)
+	bits := New(6401)
 
 	for i := 0; i < bits.Len(); i++ {
 		bits.Put(i, 1)
 		if c := bits.Count(); c != i+1 {
-			t.Fatalf("except count of bit 1: %d, got: %d\n", i+1, c)
+			t.Fatalf("expect count of bit 1: %d, got: %d \n", i+1, c)
 		}
 	}
 }
 
 func randIdx(start int, max int, ifZero int) int {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	end := r.Int()%(max-start)/2 + start
+	end := r.Intn((max-start)/2) + start
 	if end == start {
 		end += ifZero
 	}
@@ -103,7 +103,7 @@ func TestSet(t *testing.T) {
 	count := 0
 
 	if c := bits.Count(); c != count {
-		t.Fatalf("except count of bit 1: %d, got: %d\n", count, c)
+		t.Fatalf("expect count of bit 1: %d, got: %d\n", count, c)
 	}
 
 	for i, n := 0, bits.Len(); i < n-2; {
@@ -111,7 +111,7 @@ func TestSet(t *testing.T) {
 		bits.Set(i, end-1)
 		count += end - i
 		if c := bits.Count(); c != count {
-			t.Fatalf("except count of bit 1: %d, got: %d\n", count, c)
+			t.Fatalf("expect count of bit 1: %d, got: %d\n", count, c)
 		}
 		i += end
 	}
@@ -126,7 +126,7 @@ func TestClear(t *testing.T) {
 	bits.Set(0, count-1)
 
 	if c := bits.Count(); c != count {
-		t.Fatalf("except count of bit 1: %d, got: %d\n", count, c)
+		t.Fatalf("expect count of bit 1: %d, got: %d\n", count, c)
 	}
 
 	for i := 0; i < n-2; {
@@ -134,14 +134,14 @@ func TestClear(t *testing.T) {
 		bits.Clear(i, end-1)
 		count -= end - i
 		if c := bits.Count(); c != count {
-			t.Fatalf("except count of bit 1: %d, got: %d\n", count, c)
+			t.Fatalf("expect count of bit 1: %d, got: %d\n", count, c)
 		}
 		i += end
 	}
 
 	bits.Clear(0, n-1)
 	if c := bits.Count(); c != 0 {
-		t.Fatalf("except count of bit 1: 0, got: %d\n", c)
+		t.Fatalf("expect count of bit 1: 0, got: %d\n", c)
 	}
 }
 
@@ -159,14 +159,14 @@ func TestNot(t *testing.T) {
 		count += start - i
 		bits.Not(i, end-1)
 		if c := bits.Count(); c != count {
-			t.Fatalf("except count of bit 1: %d, got: %d\n", count, c)
+			t.Fatalf("expect count of bit 1: %d, got: %d\n", count, c)
 		}
 		i += end
 	}
 
 	bits.Not(0, n-1)
 	if c := bits.Count(); c != n-count {
-		t.Fatalf("except count of bit 1: %d, got: %d\n", count, c)
+		t.Fatalf("expect count of bit 1: %d, got: %d\n", count, c)
 	}
 }
 
@@ -182,7 +182,7 @@ func TestEq(t *testing.T) {
 		bits1.Put(i, bit)
 		bits2.Put(i, bit)
 		if !bits1.Eq(bits2) {
-			t.Fatalf("except equal, got %v != %v\n", bits1.ToArray(), bits2.ToArray())
+			t.Fatalf("expect equal, got %v != %v\n", bits1.ToArray(), bits2.ToArray())
 		}
 	}
 }
@@ -203,14 +203,14 @@ func _testLtOrEq(t *testing.T, eq bool) {
 	for _, i := range idxs[:len(idxs)-1] {
 		bits2.Put(i, 1)
 		if !bits2.Leq(bits1) {
-			t.Fatalf("except equal, got %v != %v\n", bits1.ToArray(), bits2.ToArray())
+			t.Fatalf("expect equal, got %v != %v\n", bits1.ToArray(), bits2.ToArray())
 		}
 	}
 
 	if eq {
 		bits2.Put(idxs[len(idxs)-1], 1)
 		if !bits2.Leq(bits1) {
-			t.Fatalf("except equal, got %v != %v\n", bits1.ToArray(), bits2.ToArray())
+			t.Fatalf("expect equal, got %v != %v\n", bits1.ToArray(), bits2.ToArray())
 		}
 	}
 }
