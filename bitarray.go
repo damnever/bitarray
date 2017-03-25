@@ -11,6 +11,7 @@ import (
 )
 
 type BitArray struct {
+	lenpad int
 	length int
 	bytes  []byte
 }
@@ -22,22 +23,42 @@ const (
 
 var msbmask = [8]byte{0xFF, 0xFE, 0xFC, 0xF8, 0xF0, 0xE0, 0xC0, 0x80}
 var lsbmask = [8]byte{0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F, 0xFF}
-var count = [16]int{0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4}
+
+// var count = [16]int{0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4}
+
+func nbytes(length int) int {
+	return (((length + 7) & (^7)) / 8) // (length/8) + ((length%8)? 1:0)
+}
 
 func nwords(length int) int {
 	return (((length + BitsPW - 1) & (^(BitsPW - 1))) / BitsPW)
 }
 
-func nbytes(length int) int {
-	return (((length + 7) & (^7)) / 8)
+func bytes2word(bs []byte) uint64 {
+	var n uint64
+	buf := bytes.NewBuffer(bs)
+	err := binary.Read(buf, binary.BigEndian, &n)
+	if err != nil {
+		panic(err)
+	}
+	return n
 }
 
-// New create a new BitArray with length.
+// https://en.wikipedia.org/wiki/Hamming_weight
+func countbits64(n uint64) int {
+	n -= (n >> 1) & 0x5555555555555555
+	n = (n & 0x3333333333333333) + ((n >> 2) & 0x3333333333333333)
+	n = (n + (n >> 4)) & 0x0f0f0f0f0f0f0f0f
+	return int((n * 0x0101010101010101) >> 56)
+}
+
+// New create a new BitArray with length(bits).
 func New(length int) *BitArray {
-	bl := nwords(length) * _BytesPW
+	lenpad := nwords(length) * _BytesPW
 	return &BitArray{
+		lenpad: lenpad,
 		length: length,
-		bytes:  make([]byte, bl, bl),
+		bytes:  make([]byte, lenpad, lenpad),
 	}
 }
 
@@ -50,9 +71,9 @@ func (bits *BitArray) Len() int {
 func (bits *BitArray) Count() int {
 	length := 0
 
-	for n := nbytes(bits.length) - 1; n >= 0; n-- {
-		c := bits.bytes[n]
-		length += count[c&0xF] + count[c>>4]
+	for i := 0; i < bits.lenpad; i += _BytesPW {
+		w := bytes2word(bits.bytes[i : i+_BytesPW])
+		length += countbits64(w)
 	}
 
 	return length
@@ -92,7 +113,8 @@ func (bits *BitArray) Put(n int, bit int) (int, error) {
 	return prev, nil
 }
 
-// Set the value of all bits to 1, which index range between low and high.
+// Set the value of all bits to 1, which index range between low and high,
+// both low and high included.
 // low must less than high, and low/high cannot out of range [0, BitArray.Len()).
 func (bits *BitArray) Set(low int, high int) error {
 	if low > high {
@@ -120,7 +142,8 @@ func (bits *BitArray) Set(low int, high int) error {
 	return nil
 }
 
-// Clear set the value of all bits to 0, which index range between low and high.
+// Clear set the value of all bits to 0, which index range between low and high,
+// both low and high included.
 // low must less than high, and low/high cannot out of range [0, BitArray.Len()).
 func (bits *BitArray) Clear(low int, high int) error {
 	if low > high {
@@ -148,7 +171,8 @@ func (bits *BitArray) Clear(low int, high int) error {
 	return nil
 }
 
-// Not flips the value of all bits, which index range between low and high.
+// Not flips the value of all bits, which index range between low and high,
+// both low and high included.
 // low must less than high, and low/high cannot out of range [0, BitArray.Len()).
 func (bits *BitArray) Not(low int, high int) error {
 	if low > high {
@@ -176,16 +200,6 @@ func (bits *BitArray) Not(low int, high int) error {
 	return nil
 }
 
-func bytes2word(bs []byte) uint64 {
-	var n uint64
-	buf := bytes.NewBuffer(bs)
-	err := binary.Read(buf, binary.BigEndian, &n)
-	if err != nil {
-		panic(err)
-	}
-	return n
-}
-
 // Eq check whether the BitArray is equal to another BitArray.
 // If length isn't same, return false.
 func (bits *BitArray) Eq(obits *BitArray) bool {
@@ -193,7 +207,7 @@ func (bits *BitArray) Eq(obits *BitArray) bool {
 		return false
 	}
 
-	for i := 0; i < nwords(bits.length); i++ {
+	for i := 0; i < bits.lenpad; i += _BytesPW {
 		wself := bytes2word(bits.bytes[i : i+_BytesPW])
 		wother := bytes2word(obits.bytes[i : i+_BytesPW])
 		if wself != wother {
@@ -209,7 +223,7 @@ func (bits *BitArray) Leq(obits *BitArray) bool {
 	if bits.length != obits.length {
 		return false
 	}
-	for i := 0; i < nwords(bits.length); i++ {
+	for i := 0; i < bits.lenpad; i += _BytesPW {
 		wself := bytes2word(bits.bytes[i : i+_BytesPW])
 		wother := bytes2word(obits.bytes[i : i+_BytesPW])
 		if (wself & ^wother) != 0 {
@@ -226,7 +240,7 @@ func (bits *BitArray) Lt(obits *BitArray) bool {
 		return false
 	}
 	lt := 0
-	for i := 0; i < nwords(bits.length); i++ {
+	for i := 0; i < bits.lenpad; i += _BytesPW {
 		wself := bytes2word(bits.bytes[i : i+_BytesPW])
 		wother := bytes2word(obits.bytes[i : i+_BytesPW])
 		if (wself & ^wother) != 0 {
